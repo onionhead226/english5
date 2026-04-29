@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英検5級 単語クイズ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif JP', serif; background: #f5f1e8; color: #2a2a2a; min-height: 100vh; padding: 20px 16px 60px; }
+  .container { max-width: 600px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 24px; padding: 20px 0; border-bottom: 2px solid #2a2a2a; }
+  h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; letter-spacing: 1px; }
+  .subtitle { font-size: 13px; color: #888; margin-top: 6px; letter-spacing: 2px; }
+  .stats-bar { display: flex; justify-content: space-around; background: #fff; border: 1px solid #d4cdb8; padding: 12px; margin-top: 16px; box-shadow: 2px 4px 0 #d4cdb8; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; }
+  .stat-correct { color: #16a34a; }
+  .stat-wrong { color: #dc2626; }
+  .stat-remaining { color: #888; }
+  .stat-label { font-size: 11px; color: #666; letter-spacing: 1px; margin-top: 2px; }
+  .progress-bar { background: #e8e0cd; height: 6px; border-radius: 3px; margin-top: 16px; overflow: hidden; }
+  .progress-fill { background: #d97706; height: 100%; transition: width 0.3s; }
+  .progress-text { font-size: 12px; color: #666; margin-top: 8px; }
+  .mode-selector { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .mode-btn { flex: 1; min-width: 90px; background: #fff; border: 1px solid #d4cdb8; padding: 10px 8px; font-family: 'Noto Serif JP', serif; font-size: 13px; cursor: pointer; transition: all 0.2s; color: #2a2a2a; }
+  .mode-btn.active { background: #3a3a3a; color: #f5f1e8; border-color: #3a3a3a; }
+  .mode-btn:hover:not(.active):not(:disabled) { background: #fef9e8; }
+  .mode-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .reset-btn { background: transparent; border: 1px solid #888; color: #666; padding: 6px 14px; font-family: 'Noto Serif JP', serif; font-size: 12px; cursor: pointer; margin-top: 12px; }
+  .reset-btn:hover { background: #dc2626; color: white; border-color: #dc2626; }
+  .empty-state { background: #fff; border: 1px solid #d4cdb8; padding: 40px 20px; text-align: center; margin-top: 20px; box-shadow: 2px 4px 0 #d4cdb8; }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 16px; color: #555; line-height: 1.6; }
+  .train-divider { display: flex; align-items: center; margin: 24px 0 12px; }
+  .train-label { background: #3a3a3a; color: #f5f1e8; font-size: 11px; padding: 4px 10px; letter-spacing: 1px; font-family: 'Playfair Display', serif; }
+  .train-line { flex: 1; height: 4px; background: repeating-linear-gradient(90deg, #3a3a3a 0 6px, transparent 6px 10px); }
+  .question-num { font-weight: 700; font-size: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .question-num-text::before { content: '■ '; }
+  .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; }
+  .status-correct { background: #dcfce7; color: #16a34a; border: 1px solid #16a34a; }
+  .status-wrong { background: #fee2e2; color: #dc2626; border: 1px solid #dc2626; }
+  .card { background: #fff; border: 1px solid #d4cdb8; padding: 24px 20px; margin-bottom: 16px; box-shadow: 2px 4px 0 #d4cdb8; }
+  .card.answered-correct { border-left: 4px solid #16a34a; }
+  .card.answered-wrong { border-left: 4px solid #dc2626; }
+  .jp-sentence { font-size: 19px; line-height: 1.7; margin-bottom: 14px; }
+  .en-sentence { font-size: 19px; line-height: 1.7; font-family: 'Playfair Display', serif; margin-bottom: 16px; }
+  .highlight { color: #d97706; font-weight: 700; }
+  .blank { color: #d97706; font-weight: 700; letter-spacing: 1px; }
+  .answer-btn { background: #3a3a3a; color: #f5f1e8; border: none; padding: 8px 18px; font-family: 'Noto Serif JP', serif; font-size: 13px; cursor: pointer; letter-spacing: 2px; }
+  .answer-btn:hover { background: #d97706; }
+  .answer-btn-row { display: flex; justify-content: flex-end; }
+  .answer-section { display: none; background: #fef9e8; border: 1px solid #d4cdb8; padding: 20px; margin-top: 8px; margin-bottom: 16px; }
+  .answer-section.show { display: block; }
+  .answer-word { font-family: 'Playfair Display', serif; font-size: 32px; color: #d97706; font-weight: 900; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .speak-btn { background: #d97706; color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .speak-btn:hover { transform: scale(1.1); }
+  .pos-tag { display: inline-block; background: #888; color: white; font-size: 11px; padding: 2px 6px; margin-right: 6px; }
+  .meaning { font-size: 17px; margin: 8px 0; }
+  .full-sentence { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #d4cdb8; font-size: 15px; color: #555; font-family: 'Playfair Display', serif; }
+  .judge-row { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed #d4cdb8; }
+  .judge-btn { flex: 1; padding: 12px; border: 2px solid; background: white; font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .judge-correct { border-color: #16a34a; color: #16a34a; }
+  .judge-correct:hover, .judge-correct.selected { background: #16a34a; color: white; }
+  .judge-wrong { border-color: #dc2626; color: #dc2626; }
+  .judge-wrong:hover, .judge-wrong.selected { background: #dc2626; color: white; }
+  .judge-prompt { font-size: 13px; color: #666; margin-top: 16px; text-align: center; }
+  footer { text-align: center; margin-top: 40px; font-size: 12px; color: #888; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>英検 5級</h1>
+    <div class="subtitle">VOCABULARY QUIZ · 50 WORDS</div>
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num stat-correct" id="statCorrect">0</div><div class="stat-label">CORRECT</div></div>
+      <div class="stat"><div class="stat-num stat-wrong" id="statWrong">0</div><div class="stat-label">WRONG</div></div>
+      <div class="stat"><div class="stat-num stat-remaining" id="statRemaining">50</div><div class="stat-label">REMAINING</div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+    <div class="progress-text" id="progressText">0 / 50 完了</div>
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="all" onclick="setMode('all')">すべて</button>
+      <button class="mode-btn" data-mode="unanswered" onclick="setMode('unanswered')">未解答</button>
+      <button class="mode-btn" data-mode="wrong" onclick="setMode('wrong')">間違えた問題</button>
+    </div>
+    <button class="reset-btn" onclick="resetProgress()">記録をリセット</button>
+  </header>
+  <div id="quizContainer"></div>
+  <footer>🔊 ボタンで発音が聞けます<br>記録は自動保存されます</footer>
+</div>
+<script>
+const quizData = [
+  { jp: "私は<span class='highlight'>犬</span>が好きです。", en: "I like {d}.", word: "dogs", pos: "名詞", meaning: "犬（複数形）", fullEn: "I like dogs." },
+  { jp: "これは<span class='highlight'>本</span>です。", en: "This is a {b}.", word: "book", pos: "名詞", meaning: "本", fullEn: "This is a book." },
+  { jp: "私は学校へ<span class='highlight'>行きます</span>。", en: "I {g} to school.", word: "go", pos: "動詞", meaning: "行く", fullEn: "I go to school." },
+  { jp: "彼女は<span class='highlight'>先生</span>です。", en: "She is a {t}.", word: "teacher", pos: "名詞", meaning: "先生・教師", fullEn: "She is a teacher." },
+  { jp: "私は水を<span class='highlight'>飲みます</span>。", en: "I {d} water.", word: "drink", pos: "動詞", meaning: "飲む", fullEn: "I drink water." },
+  { jp: "私の<span class='highlight'>母</span>は親切です。", en: "My {m} is kind.", word: "mother", pos: "名詞", meaning: "母・お母さん", fullEn: "My mother is kind." },
+  { jp: "今日は<span class='highlight'>暑い</span>です。", en: "It is {h} today.", word: "hot", pos: "形容詞", meaning: "暑い・熱い", fullEn: "It is hot today." },
+  { jp: "私は<span class='highlight'>りんご</span>を食べます。", en: "I eat an {a}.", word: "apple", pos: "名詞", meaning: "りんご", fullEn: "I eat an apple." },
+  { jp: "彼は<span class='highlight'>速く</span>走ります。", en: "He runs {f}.", word: "fast", pos: "副詞", meaning: "速く", fullEn: "He runs fast." },
+  { jp: "私は<span class='highlight'>テニス</span>をします。", en: "I play {t}.", word: "tennis", pos: "名詞", meaning: "テニス", fullEn: "I play tennis." },
+  { jp: "この<span class='highlight'>本</span>は新しいです。", en: "This {b} is new.", word: "book", pos: "名詞", meaning: "本", fullEn: "This book is new." },
+  { jp: "私は<span class='highlight'>学生</span>です。", en: "I am a {s}.", word: "student", pos: "名詞", meaning: "学生・生徒", fullEn: "I am a student." },
+  { jp: "彼は毎朝<span class='highlight'>朝食</span>を食べます。", en: "He has {b} every morning.", word: "breakfast", pos: "名詞", meaning: "朝食", fullEn: "He has breakfast every morning." },
+  { jp: "私の<span class='highlight'>父</span>は背が高いです。", en: "My {f} is tall.", word: "father", pos: "名詞", meaning: "父・お父さん", fullEn: "My father is tall." },
+  { jp: "私は<span class='highlight'>音楽</span>が好きです。", en: "I like {m}.", word: "music", pos: "名詞", meaning: "音楽", fullEn: "I like music." },
+  { jp: "今日は<span class='highlight'>月曜日</span>です。", en: "Today is {M}.", word: "Monday", pos: "名詞", meaning: "月曜日", fullEn: "Today is Monday." },
+  { jp: "私は<span class='highlight'>本を読みます</span>。", en: "I {r} a book.", word: "read", pos: "動詞", meaning: "読む", fullEn: "I read a book." },
+  { jp: "猫は<span class='highlight'>魚</span>が好きです。", en: "Cats like {f}.", word: "fish", pos: "名詞", meaning: "魚", fullEn: "Cats like fish." },
+  { jp: "私は<span class='highlight'>赤い</span>ペンを持っています。", en: "I have a {r} pen.", word: "red", pos: "形容詞", meaning: "赤い", fullEn: "I have a red pen." },
+  { jp: "彼女は<span class='highlight'>歌います</span>。", en: "She {s} a song.", word: "sings", pos: "動詞", meaning: "歌う（三人称単数）", fullEn: "She sings a song." },
+  { jp: "私たちは<span class='highlight'>公園</span>へ行きます。", en: "We go to the {p}.", word: "park", pos: "名詞", meaning: "公園", fullEn: "We go to the park." },
+  { jp: "<span class='highlight'>窓</span>を開けてください。", en: "Please open the {w}.", word: "window", pos: "名詞", meaning: "窓", fullEn: "Please open the window." },
+  { jp: "私は<span class='highlight'>幸せ</span>です。", en: "I am {h}.", word: "happy", pos: "形容詞", meaning: "幸せな・うれしい", fullEn: "I am happy." },
+  { jp: "彼は<span class='highlight'>背が高い</span>です。", en: "He is {t}.", word: "tall", pos: "形容詞", meaning: "背が高い", fullEn: "He is tall." },
+  { jp: "<span class='highlight'>太陽</span>が明るいです。", en: "The {s} is bright.", word: "sun", pos: "名詞", meaning: "太陽", fullEn: "The sun is bright." },
+  { jp: "私は<span class='highlight'>歩いて</span>学校へ行きます。", en: "I {w} to school.", word: "walk", pos: "動詞", meaning: "歩く", fullEn: "I walk to school." },
+  { jp: "彼女は<span class='highlight'>かわいい</span>です。", en: "She is {c}.", word: "cute", pos: "形容詞", meaning: "かわいい", fullEn: "She is cute." },
+  { jp: "<span class='highlight'>夕食</span>の時間です。", en: "It's time for {d}.", word: "dinner", pos: "名詞", meaning: "夕食", fullEn: "It's time for dinner." },
+  { jp: "私は<span class='highlight'>友達</span>と遊びます。", en: "I play with my {f}.", word: "friend", pos: "名詞", meaning: "友達", fullEn: "I play with my friend." },
+  { jp: "私は<span class='highlight'>泳ぐ</span>のが好きです。", en: "I like to {s}.", word: "swim", pos: "動詞", meaning: "泳ぐ", fullEn: "I like to swim." },
+  { jp: "今日は<span class='highlight'>雨</span>が降っています。", en: "It is {r} today.", word: "raining", pos: "動詞", meaning: "雨が降る（進行形）", fullEn: "It is raining today." },
+  { jp: "私は<span class='highlight'>新しい</span>かばんを買いました。", en: "I bought a {n} bag.", word: "new", pos: "形容詞", meaning: "新しい", fullEn: "I bought a new bag." },
+  { jp: "<span class='highlight'>鳥</span>が空を飛んでいます。", en: "A {b} is flying in the sky.", word: "bird", pos: "名詞", meaning: "鳥", fullEn: "A bird is flying in the sky." },
+  { jp: "私は<span class='highlight'>緑色</span>が好きです。", en: "I like {g}.", word: "green", pos: "名詞・形容詞", meaning: "緑色", fullEn: "I like green." },
+  { jp: "彼は<span class='highlight'>料理する</span>のが上手です。", en: "He is good at {c}.", word: "cooking", pos: "動詞", meaning: "料理する（動名詞）", fullEn: "He is good at cooking." },
+  { jp: "<span class='highlight'>椅子</span>に座ってください。", en: "Please sit on the {c}.", word: "chair", pos: "名詞", meaning: "椅子", fullEn: "Please sit on the chair." },
+  { jp: "私は<span class='highlight'>寒い</span>です。", en: "I am {c}.", word: "cold", pos: "形容詞", meaning: "寒い・冷たい", fullEn: "I am cold." },
+  { jp: "彼女は<span class='highlight'>姉</span>です。", en: "She is my {s}.", word: "sister", pos: "名詞", meaning: "姉・妹", fullEn: "She is my sister." },
+  { jp: "私は<span class='highlight'>毎日</span>勉強します。", en: "I study {e}.", word: "every day", pos: "副詞", meaning: "毎日", fullEn: "I study every day." },
+  { jp: "<span class='highlight'>机</span>の上に本があります。", en: "There is a book on the {d}.", word: "desk", pos: "名詞", meaning: "机", fullEn: "There is a book on the desk." },
+  { jp: "私は<span class='highlight'>絵</span>を描きます。", en: "I draw a {p}.", word: "picture", pos: "名詞", meaning: "絵・写真", fullEn: "I draw a picture." },
+  { jp: "彼は<span class='highlight'>サッカー</span>が好きです。", en: "He likes {s}.", word: "soccer", pos: "名詞", meaning: "サッカー", fullEn: "He likes soccer." },
+  { jp: "私は<span class='highlight'>大きい</span>家に住んでいます。", en: "I live in a {b} house.", word: "big", pos: "形容詞", meaning: "大きい", fullEn: "I live in a big house." },
+  { jp: "<span class='highlight'>花</span>がきれいです。", en: "The {f} is beautiful.", word: "flower", pos: "名詞", meaning: "花", fullEn: "The flower is beautiful." },
+  { jp: "私は<span class='highlight'>歌</span>を歌います。", en: "I sing a {s}.", word: "song", pos: "名詞", meaning: "歌", fullEn: "I sing a song." },
+  { jp: "彼女は<span class='highlight'>若い</span>です。", en: "She is {y}.", word: "young", pos: "形容詞", meaning: "若い", fullEn: "She is young." },
+  { jp: "<span class='highlight'>車</span>が速いです。", en: "The {c} is fast.", word: "car", pos: "名詞", meaning: "車", fullEn: "The car is fast." },
+  { jp: "私は<span class='highlight'>牛乳</span>を飲みます。", en: "I drink {m}.", word: "milk", pos: "名詞", meaning: "牛乳", fullEn: "I drink milk." },
+  { jp: "<span class='highlight'>春</span>は暖かいです。", en: "{S} is warm.", word: "Spring", pos: "名詞", meaning: "春", fullEn: "Spring is warm." },
+  { jp: "私は<span class='highlight'>11歳</span>です。", en: "I am {e} years old.", word: "eleven", pos: "数詞", meaning: "11", fullEn: "I am eleven years old." }
+];
+
+let mode = 'all';
+let results = {};
+let revealed = new Set();
+
+async function loadState() {
+  try {
+    const r = await window.storage.get('quiz_results');
+    if (r && r.value) results = JSON.parse(r.value);
+  } catch (e) {}
+  try {
+    const r = await window.storage.get('quiz_revealed');
+    if (r && r.value) revealed = new Set(JSON.parse(r.value));
+  } catch (e) {}
+}
+
+async function saveResults() {
+  try { await window.storage.set('quiz_results', JSON.stringify(results)); } catch (e) {}
+}
+async function saveRevealed() {
+  try { await window.storage.set('quiz_revealed', JSON.stringify([...revealed])); } catch (e) {}
+}
+
+function getFilteredIndices() {
+  const all = quizData.map((_, i) => i);
+  if (mode === 'all') return all;
+  if (mode === 'unanswered') return all.filter(i => !(i in results));
+  if (mode === 'wrong') return all.filter(i => results[i] === 'wrong');
+  return all;
+}
+
+function setMode(newMode) {
+  mode = newMode;
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === newMode);
+  });
+  renderQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function makeBlank(word) {
+  const first = word[0];
+  const rest = word.slice(1);
+  const dashes = rest.replace(/[a-zA-Z]/g, '-');
+  return "<span class='blank'>" + first + dashes + "</span>";
+}
+
+function speak(word) {
+  if (!('speechSynthesis' in window)) {
+    alert('お使いのブラウザは音声機能に対応していません');
+    return;
+  }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = 'en-US';
+  u.rate = 0.85;
+  speechSynthesis.speak(u);
+}
+
+function showAnswer(idx) {
+  document.getElementById('answer-' + idx).classList.add('show');
+  revealed.add(idx);
+  saveRevealed();
+  speak(quizData[idx].word);
+  const btn = document.getElementById('answerBtn-' + idx);
+  if (btn) btn.style.display = 'none';
+}
+
+function judgeAnswer(idx, judgment) {
+  results[idx] = judgment;
+  saveResults();
+  updateStats();
+  renderQuiz();
+}
+
+function updateStats() {
+  let correct = 0, wrong = 0;
+  Object.values(results).forEach(v => {
+    if (v === 'correct') correct++;
+    else if (v === 'wrong') wrong++;
+  });
+  const remaining = quizData.length - correct - wrong;
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent = wrong;
+  document.getElementById('statRemaining').textContent = remaining;
+  
+  const answered = correct + wrong;
+  const percent = (answered / quizData.length) * 100;
+  document.getElementById('progressFill').style.width = percent + '%';
+  document.getElementById('progressText').textContent = answered + ' / ' + quizData.length + ' 完了';
+  
+  const wrongModeBtn = document.querySelector('[data-mode="wrong"]');
+  if (wrong === 0) {
+    wrongModeBtn.disabled = true;
+    if (mode === 'wrong') setMode('all');
+  } else {
+    wrongModeBtn.disabled = false;
+  }
+}
+
+async function resetProgress() {
+  if (!confirm('すべての記録をリセットしますか？')) return;
+  results = {};
+  revealed.clear();
+  try {
+    await window.storage.delete('quiz_results');
+    await window.storage.delete('quiz_revealed');
+  } catch (e) {}
+  updateStats();
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const indices = getFilteredIndices();
+  const container = document.getElementById('quizContainer');
+  
+  if (indices.length === 0) {
+    let msg = '';
+    if (mode === 'unanswered') msg = 'すべての問題に解答済みです！🎉';
+    else if (mode === 'wrong') msg = '間違えた問題はありません！素晴らしい！🎊';
+    else msg = '問題がありません';
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✨</div><div class="empty-state-text">' + msg + '</div></div>';
+    return;
+  }
+  
+  container.innerHTML = indices.map(idx => {
+    const q = quizData[idx];
+    const enWithBlank = q.en.replace(/\{[a-zA-Z]\}/, makeBlank(q.word));
+    const num = String(idx + 1).padStart(3, '0');
+    const result = results[idx];
+    const isRevealed = revealed.has(idx);
+    
+    let cardClass = 'card';
+    if (result === 'correct') cardClass += ' answered-correct';
+    else if (result === 'wrong') cardClass += ' answered-wrong';
+    
+    let badge = '';
+    if (result === 'correct') badge = '<span class="status-badge status-correct">✓ 正解</span>';
+    else if (result === 'wrong') badge = '<span class="status-badge status-wrong">✗ 不正解</span>';
+    
+    const answerBtnHtml = isRevealed ? '' :
+      '<div class="answer-btn-row"><button class="answer-btn" id="answerBtn-' + idx + '" onclick="showAnswer(' + idx + ')">解 答</button></div>';
+    
+    const judgeHtml = !result ?
+      '<div class="judge-prompt">答えを覚えていましたか？</div>' +
+      '<div class="judge-row">' +
+      '<button class="judge-btn judge-correct" onclick="judgeAnswer(' + idx + ', \'correct\')">○ 正解</button>' +
+      '<button class="judge-btn judge-wrong" onclick="judgeAnswer(' + idx + ', \'wrong\')">✗ 不正解</button>' +
+      '</div>' :
+      '<div class="judge-row">' +
+      '<button class="judge-btn judge-correct ' + (result === 'correct' ? 'selected' : '') + '" onclick="judgeAnswer(' + idx + ', \'correct\')">○ 正解</button>' +
+      '<button class="judge-btn judge-wrong ' + (result === 'wrong' ? 'selected' : '') + '" onclick="judgeAnswer(' + idx + ', \'wrong\')">✗ 不正解</button>' +
+      '</div>';
+    
+    const answerSectionShow = isRevealed ? 'show' : '';
+    
+    return '<div class="train-divider"><span class="train-label">Eiken 5</span><span class="train-line"></span></div>' +
+      '<div class="question-num"><span class="question-num-text">' + num + '</span>' + badge + '</div>' +
+      '<div class="' + cardClass + '">' +
+      '<div class="jp-sentence">' + q.jp + '</div>' +
+      '<div class="en-sentence">' + enWithBlank + '</div>' +
+      answerBtnHtml + '</div>' +
+      '<div class="answer-section ' + answerSectionShow + '" id="answer-' + idx + '">' +
+      '<div class="answer-word">' + q.word +
+      '<button class="speak-btn" onclick="speak(\'' + q.word + '\')" title="発音を聞く">🔊</button></div>' +
+      '<div><span class="pos-tag">' + q.pos + '</span><span class="meaning">' + q.meaning + '</span></div>' +
+      '<div class="full-sentence">' + q.fullEn + '</div>' +
+      judgeHtml + '</div>';
+  }).join('');
+}
+
+(async () => {
+  await loadState();
+  updateStats();
+  renderQuiz();
+})();
+</script>
+</body>
+</html>
